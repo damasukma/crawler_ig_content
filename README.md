@@ -30,3 +30,14 @@ FILE_CONFIG
 }
   
 ```
+
+
+RUNNING WITH SCHEDULER
+-------
+
+```shell
+  
+  go run main.go -scheduler=true -time=day -interval=1
+
+```
+
