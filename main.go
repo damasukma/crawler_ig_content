@@ -57,7 +57,6 @@ func main(){
 		<-gocron.Start()
 	}else{
 		task()
-		fmt.Println("ULL")
 	}
 }
 
