@@ -2,7 +2,9 @@
 For Service Crawler instagram set in redis
 
 
-for file .env
+FILE .env
+---------
+
 * APP_LEVEL=development
 * REDIS_HOST=127.0.0.1
 * REDIS_PASSWORD=
@@ -10,7 +12,9 @@ for file .env
 * FILE_CONFIG=(path file config)
 
 
-FOR CONFIG_FILE
+FILE_CONFIG
+-----------
+
 ```json
   {
   "config1": {
