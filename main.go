@@ -34,9 +34,26 @@ var ctx = context.Background()
 
 func main(){
 	scheduller := flag.Bool("scheduller", false, "Set scheduller for running or manual (ex: ./apps -scheduller=true)")
+	time := flag.String("time", "", "Set time")
+	interval := flag.Int("interval", 0, "Set time")
 	flag.Parse()
+
+	timeInterval := uint64(*interval)
 	if *scheduller == true{
-		gocron.Every(1).Days().Do(task)
+		switch *time {
+		case "week":
+			gocron.Every(timeInterval).Weeks().Do(task)
+		case "day":
+			gocron.Every(timeInterval).Days().Do(task)
+		case "hour":
+			gocron.Every(timeInterval).Hours().Do(task)
+		case "minute":
+			gocron.Every(timeInterval).Minutes().Do(task)
+		case "second":
+			gocron.Every(timeInterval).Seconds().Do(task)
+		default:
+			gocron.Every(1).Days().Do(task)
+		}
 		<-gocron.Start()
 	}else{
 		task()
