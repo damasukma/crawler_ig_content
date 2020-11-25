@@ -24,9 +24,9 @@ type Option struct{
 
 
 type Response struct{
-	Status int
-	Message string
-	Data interface{}
+	Status int `json:"status"`
+	Message string `json:"message"`
+	Data interface{} `json:"data"`
 }
 
 
@@ -81,7 +81,7 @@ func task(){
 
 	option := &Option{
 		Address: fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Password: os.Getenv("PASSWORD"),
+		Password: os.Getenv("REDIS_PASSWORD"),
 		Stage: os.Getenv("APP_LEVEL"),
 	}
 
@@ -123,10 +123,19 @@ func task(){
 
 
 		if data != nil{
+			fmt.Println(keyName)
 			client.Del(ctx, keyName)
 			response = data
-			raw, _ := json.Marshal(&Response{Status: http.StatusOK, Message: fmt.Sprintf("Fetch Instagram Media %s", module["username"]), Data: response})
-			client.Set(ctx, keyName, raw, 0)
+			raw, err := json.Marshal(&Response{Status: http.StatusOK, Message: fmt.Sprintf("Fetch Instagram Media %s", module["username"]), Data: response})
+			if err != nil{
+				panic(err)
+			}
+
+			fmt.Println(string(raw))
+			err = client.Set(ctx, keyName, raw, 0).Err()
+			if err != nil{
+				panic(err)
+			}
 
 		}
 
