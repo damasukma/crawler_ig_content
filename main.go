@@ -33,13 +33,13 @@ type Response struct{
 var ctx = context.Background()
 
 func main(){
-	scheduller := flag.Bool("scheduller", false, "Set scheduller for running or manual (ex: ./apps -scheduller=true)")
+	scheduler := flag.Bool("scheduler", false, "Set scheduler for running or manual (ex: ./apps -scheduler=true)")
 	time := flag.String("time", "", "Set time")
 	interval := flag.Int("interval", 0, "Set time")
 	flag.Parse()
 
 	timeInterval := uint64(*interval)
-	if *scheduller == true{
+	if *scheduler == true{
 		switch *time {
 		case "week":
 			gocron.Every(timeInterval).Weeks().Do(task)
