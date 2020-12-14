@@ -6,40 +6,39 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/go-redis/redis/v8"
-	"github.com/jasonlvhit/gocron"
-	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/jasonlvhit/gocron"
+	"github.com/joho/godotenv"
 )
 
-type Option struct{
-	Address string
+type Option struct {
+	Address  string
 	Password string
-	Stage string
+	Stage    string
 }
 
-
-type Response struct{
-	Status int `json:"status"`
-	Message string `json:"message"`
-	Data interface{} `json:"data"`
+type Response struct {
+	Status  int         `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
-
 
 var ctx = context.Background()
 
-func main(){
+func main() {
 	scheduler := flag.Bool("scheduler", false, "Set scheduler for running or manual (ex: ./apps -scheduler=true)")
 	time := flag.String("time", "", "Set time")
 	interval := flag.Int("interval", 0, "Set time")
 	flag.Parse()
 
 	timeInterval := uint64(*interval)
-	if *scheduler == true{
+	if *scheduler == true {
 		switch *time {
 		case "week":
 			gocron.Every(timeInterval).Weeks().Do(task)
@@ -55,13 +54,12 @@ func main(){
 			gocron.Every(1).Days().Do(task)
 		}
 		<-gocron.Start()
-	}else{
+	} else {
 		task()
 	}
 }
 
-
-func task(){
+func task() {
 
 	err := godotenv.Load()
 	if err != nil {
@@ -75,18 +73,17 @@ func task(){
 		*fileConfig = os.Getenv("FILE_CONFIG")
 	}
 
-
 	//Redis Config
 	redisConfig := flag.String("redis", "", "Your redis config (default in .env file). ex: 'address|password|port|prefix'")
 
 	option := &Option{
-		Address: fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
+		Address:  fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
 		Password: os.Getenv("REDIS_PASSWORD"),
-		Stage: os.Getenv("APP_LEVEL"),
+		Stage:    os.Getenv("APP_LEVEL"),
 	}
 
-	if *redisConfig != ""{
-		opt :=  strings.Split(*redisConfig, "|")
+	if *redisConfig != "" {
+		opt := strings.Split(*redisConfig, "|")
 		option.Address = fmt.Sprintf("%s:%s", opt[0], opt[2])
 		option.Password = opt[1]
 		option.Stage = opt[3]
@@ -98,14 +95,12 @@ func task(){
 
 	configs, err := readConfig(*fileConfig)
 
-
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 
+	for v := range *configs {
 
-	for v := range *configs{
-		fmt.Println(v)
 		var (
 			response interface{}
 		)
@@ -114,36 +109,38 @@ func task(){
 		prefix := fmt.Sprintf("%s_%s", module["prefix"].(string), option.Stage)
 		limit := int(module["limit"].(float64))
 
-		keyName := fmt.Sprintf("%s_%s_%d",prefix,"get_instagram_limit", limit)
+		keyName := fmt.Sprintf("%s_%s_%d", prefix, "get_instagram_limit", limit)
 
-		data, err := instagram_scraper.FetchMediaImage(module["username"].(string), limit)
+		data, statusCode, err := instagram_scraper.FetchMediaImage(module["username"].(string), limit)
 		if err != nil {
 			panic(err)
 		}
 
-
-		if data != nil{
+		if *data != nil && statusCode != 429 {
 			fmt.Println(keyName)
 			client.Del(ctx, keyName)
 			response = data
 			raw, err := json.Marshal(&Response{Status: http.StatusOK, Message: fmt.Sprintf("Fetch Instagram Media %s", module["username"]), Data: response})
-			if err != nil{
+			if err != nil {
 				panic(err)
 			}
 
 			fmt.Println(string(raw))
 			err = client.Set(ctx, keyName, raw, 0).Err()
-			if err != nil{
+			if err != nil {
 				panic(err)
 			}
 
+		} else {
+			format := fmt.Sprintf("[%s] => STATUS CODE %d", v, statusCode)
+			fmt.Println(format)
 		}
 
 	}
 
 }
 
-func readConfig(cfg string) (*map[string]interface{}, error){
+func readConfig(cfg string) (*map[string]interface{}, error) {
 	var jsonMap map[string]interface{}
 
 	file, err := os.Open(cfg)
@@ -168,11 +165,11 @@ func readConfig(cfg string) (*map[string]interface{}, error){
 
 }
 
-func connectRedis(opt *Option) *redis.Client{
+func connectRedis(opt *Option) *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
-		Addr: opt.Address,
+		Addr:     opt.Address,
 		Password: opt.Password,
-		DB: 0,
+		DB:       0,
 	})
 	return rdb
 }
